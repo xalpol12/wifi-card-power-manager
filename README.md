@@ -1,22 +1,21 @@
-## Narzędzie sterujące mocą sygnału karty bezprzewodowej
+## Wifi Card Power Manager 
 
-Projekt zaliczeniowy laboratorium z przedmiotu Programowanie Sieciowe 2024 na Politechnice Poznańskiej, prowadzący: dr inż. Michał Kalewski.
+Final project for the Network Programming 2024 laboratory at Poznań University of Technology.
 
-## Sposób uruchomienia programu
-1. Kompilacja: `gcc -Wall ./wifi_card_power_manager.c -o ./wifi_card_power_manager`
-2. Uruchomienie: `sudo ./wifi_card_power_manager <interfejs_wifi>`
+## Program execution method
+1. Compilation: `gcc -Wall ./wifi_card_power_manager.c -o ./wifi_card_power_manager`
+2. Execution: `sudo ./wifi_card_power_manager <wifi_interface>`
+The `wifi_card_power_manager.c` file includes all other source files, so only this file should be compiled.
 
-Plik `wifi_card_power_manager.c` załącza wszystkie inne pliki źródłowe, należy więc kompilować tylko ten plik.
-
-## Zawartość plików źródłowych:
+## Source files contents:
 ### globals.h
-Plik nagłówkowy zawierający #define dla zmiennych globalnych, na podstawie których obliczana jest liniowa zależność mocy karty od obecnego sygnału. W celu dostosowania algorytmu na potrzeby użytku dla własnej bezprzewodowej karty sieciowej, należy dokonać pomiarów i sprawdzić wartości najsilniejszego i najsłabszego sygnału oraz dopuszczalnych wartości mocy karty.
+Header file containing `#define` for global variables, based on which the linear dependency of the card power on the current signal is calculated. To adjust the algorithm for use with your own wireless network card, measurements should be taken and the values of the strongest and weakest signals, as well as the permissible values ​​of the card power, should be checked.
 
 ### wifi_card_power_manager.c 
-Główny plik programu zawierający wywołania pozostałych funkcji i obsługujący flow programu. Zawiera nieskończoną pętlę, w której odczytywana jest obecna moc oraz sygnał, następnie obliczana jest nowa moc karty według liniowej zależności, na podstawie wartości podanych w pliku nagłówkowym `globals.h`
+The main program file containing calls to other functions and handling the program flow. It contains an infinite loop in which the current power and signal are read, then the new card power is calculated according to the linear dependency based on the values provided in the header file `globals.h.`
 
 ### calculations.c
-Zawiera funkcje obsługujące logikę programu: odczytanie obecnych wartości mocy i sygnału karty, funkcję mapującą dla zdefiniowanych zmiennych globalnych z pliku `globals.h`, funkcję obliczającą następną wartość mocy dla podanego sygnału oraz funkcję wykonującą system call w celu zmiany mocy karty sieciowej.
+Contains functions handling the program logic: reading the current power and signal values ​​of the card, a mapping function for the defined global variables from the `globals.h` file, a function calculating the next power value for the given signal, and a function executing a system call to change the power of the wireless network card.
 
 ### pretty_print.c
-Funkcja wypisująca w terminalu obecne wartości mocy i sygnału. Przyjmuje wskaźnik do pliku, w przypadku podania wskaźnika `stdout` funkcja co odświeżenie będzie wypisywała nowe wartości (działanie jak komenda `watch`) z dodatkowymi paskami stanu, wizualizującymi obecne poziomy w odniesieniu do całkowitych poziomów. W przypadku przekazania wskaźnika do pliku innego niż `stdout` funkcja do pliku zapisuje wartości mocy i sygnału linia po linii.
+A function printing the current power and signal values ​​in the terminal. It takes a pointer to a file, and when a `stdout` pointer is provided, the function will print new values ​​with each refresh (similar to the `watch` command) with additional status bars visualizing current levels in relation to total levels. If a file pointer other than `stdout` is passed, the function will write power and signal values to the file line by line.
