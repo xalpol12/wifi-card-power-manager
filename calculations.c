@@ -1,43 +1,46 @@
 #include "globals.h"
+#include <linux/if.h>
+#include <linux/wireless.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#define BUFF 1024
-
-static const char iwconfig_command_template[] = "iwconfig %s";
-static const char set_txpower_command_template[] = "iwconfig %s txpower %ddBm";
+#include <sys/ioctl.h>
+#include <unistd.h>
 
 /*
- * Reads the power and signal level from the iwconfig output invoked for the
- * provided interface name and stores it in the provided power and signal
- * variable.
+ * Reads the transmit power and signal level of the specified wireless interface
+ * using the ioctl system call and stores them in the provided power and signal
+ * variables respectively.
  */
 int read_signal_levels(const char *interface, int *power, int *signal) {
-  FILE *fp;
-  char output[BUFF];
-  char command[100];
-  char *power_str, *signal_str;
+  int sfd;
+  struct iwreq iw;
+  struct iw_statistics iw_stats;
 
-  sprintf(command, iwconfig_command_template, interface);
-
-  fp = popen(command, "r");
-  if (fp == NULL) {
-    perror("Error executing iwconfig");
+  if ((sfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+    perror("Error creating socket");
     return EXIT_FAILURE;
   }
 
-  while (fgets(output, sizeof(output), fp) != NULL) {
-    power_str = strstr(output, "Tx-Power");
-    if (power_str != NULL) {
-      sscanf(power_str, "Tx-Power=%d dBm", power);
-    }
-    signal_str = strstr(output, "Signal level");
-    if (signal_str != NULL) {
-      sscanf(signal_str, "Signal level=%d dBm", signal);
-    }
+  strncpy(iw.ifr_name, interface, IFNAMSIZ);
+  if (ioctl(sfd, SIOCGIWTXPOW, &iw) == -1) {
+    perror("Error reading transmit power level");
+    close(sfd);
+    return EXIT_FAILURE;
   }
+  *power = iw.u.txpower.value;
 
+  iw.u.data.pointer = &iw_stats;
+  iw.u.data.length = sizeof(struct iw_statistics);
+  iw.u.data.flags = 1;
+  if (ioctl(sfd, SIOCGIWSTATS, &iw) == -1) {
+    perror("Error reading wireless statistics");
+    close(sfd);
+    return EXIT_FAILURE;
+  }
+  *signal = (int8_t)iw_stats.qual.level;
+
+  close(sfd);
   return EXIT_SUCCESS;
 };
 
@@ -71,12 +74,31 @@ const int calculate_power_level(const int *signal) {
 }
 
 /*
- * This function constructs and executes a system command to adjust the
- * transmission power level of a wireless interface specified by the provided
- * interface name.
+ * This function adjusts the transmission power level of a specified wireless
+ * interface by using the ioctl system call.
  */
 void adjust_power_level(char *interface, int power) {
-  char command[100];
-  sprintf(command, set_txpower_command_template, interface, power);
-  system(command);
+  int sfd;
+  struct iwreq iw;
+
+  if ((sfd = socket(AF_INET, SOCK_DGRAM, 0)) == -1) {
+    perror("Error creating socket");
+    return;
+  }
+
+  strncpy(iw.ifr_name, interface, IFNAMSIZ);
+  if (ioctl(sfd, SIOCGIWTXPOW, &iw) == -1) {
+    perror("Error reading transmit power level");
+    close(sfd);
+    return;
+  }
+  iw.u.txpower.value = power;
+
+  if (ioctl(sfd, SIOCSIWTXPOW, &iw) == -1) {
+    perror("Error setting transmit power level");
+    close(sfd);
+    return;
+  };
+
+  close(sfd);
 }
